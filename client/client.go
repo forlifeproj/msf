@@ -45,7 +45,10 @@ func NewClient(callDesc CallDesc) *FlClient {
 		[]string{consulAddr},
 		nil)
 	option := rclient.DefaultOption
-	option.SerializeType = callDesc.CodecType
+	if callDesc.CodecType > protocol.SerializeNone && callDesc.CodecType <= protocol.Thrift {
+		option.SerializeType = callDesc.CodecType
+	}
+
 	flC.RpcCli = rclient.NewXClient(
 		flC.SvrInfo.SvrName,
 		rclient.Failtry,
