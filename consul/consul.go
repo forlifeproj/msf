@@ -8,7 +8,8 @@ import (
 )
 
 type ConsulConfig struct {
-	ConsulAddr string
+	ConsulAddr  string
+	Environment string
 }
 
 type ConsulUtils struct {
@@ -21,18 +22,18 @@ var ConsulInstance *ConsulUtils
 type SvrCfg struct {
 	Server struct {
 		ConsulAddr string `default:""`
+		Environment string `default:"test"`
 	}
 }
 
 func Init(cfg string) error {
 	svrCfg := SvrCfg{}
-
 	if err := config.ParseConfigWithPath(&svrCfg, cfg); err != nil {
 		fmt.Printf("load svrCfg failed. err:%+v cfg:%s", err, cfg)
 		return err
 	}
-
 	SetConsulAddr(svrCfg.Server.ConsulAddr)
+	SetConsulEnvironment(svrCfg.Server.Environment)
 	return nil
 }
 
@@ -58,5 +59,22 @@ func GetConsulAddr() string {
 		return utils.ConsulCfg.ConsulAddr
 	}
 	fmt.Printf("utils:%+v", utils)
+	return ""
+}
+
+func SetConsulEnvironment(envir string) {
+	utils := NewConsulUtils()
+	if utils != nil {
+		utils.ConsulCfg.Environment = envir
+		fmt.Printf("set  consulEnvir=%s suuc \n", envir)
+	}
+}
+
+func GetConsulEnvironment() string {
+	utils := NewConsulUtils()
+	if utils != nil {
+		fmt.Printf("get consulEnvir=%s suuc \n", utils.ConsulCfg.Environment)
+		return utils.ConsulCfg.Environment
+	}
 	return ""
 }
