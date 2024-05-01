@@ -9,6 +9,7 @@ import (
 	"github.com/forlifeproj/msf/consul"
 	cclient "github.com/rpcxio/rpcx-consul/client"
 	rclient "github.com/smallnest/rpcx/client"
+	"github.com/smallnest/rpcx/protocol"
 )
 
 // CallDesc RPC参数
@@ -16,6 +17,7 @@ type CallDesc struct {
 	LocalServiceName string        // <非必填>本次请求主调服务名
 	ServiceName      string        // <必填>本次请求被调服务名, 对应toml配置文件中的一段
 	Timeout          time.Duration // <非必填>RPC超时时间
+	CodecType        protocol.SerializeType
 }
 
 type ServiceInfo struct {
@@ -42,12 +44,14 @@ func NewClient(callDesc CallDesc) *FlClient {
 		flC.SvrInfo.SvrName,
 		[]string{consulAddr},
 		nil)
+	option := rclient.DefaultOption
+	option.SerializeType = callDesc.CodecType
 	flC.RpcCli = rclient.NewXClient(
 		flC.SvrInfo.SvrName,
 		rclient.Failtry,
 		rclient.RandomSelect,
 		svrDiscovery,
-		rclient.DefaultOption)
+		option)
 	return flC
 }
 
