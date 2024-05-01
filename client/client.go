@@ -70,4 +70,5 @@ func (f *FlClient) ParseSvrInfo(serviceName string) {
 	if len(vecSplit) >= 2 {
 		f.SvrInfo.InterfaceName = vecSplit[2]
 	}
+	fmt.Printf("svrInfo:%+v \n", f.SvrInfo)
 }
