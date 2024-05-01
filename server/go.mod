@@ -3,8 +3,8 @@ module github.com/forlifeproj/msf/server
 go 1.20
 
 require (
-	github.com/forlifeproj/msf/config v0.0.0-20240428130908-1c45b79d112c
-	github.com/forlifeproj/msf/consul v0.0.0-20240428131808-4bc83dc6447f
+	github.com/forlifeproj/msf/config v0.0.0-20240501004236-6fba10dc41c8
+	// github.com/forlifeproj/msf/consul v0.0.0-20240428132155-e9d714e2f9e6
 	github.com/forlifeproj/msf/log v0.0.0-20240428131808-4bc83dc6447f
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rpcxio/rpcx-consul v0.0.0-20230904043151-f6175fbe2f72
@@ -18,6 +18,7 @@ require (
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
+	github.com/forlifeproj/msf/consul v0.0.0-20240501004236-6fba10dc41c8 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.3.2 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/godzie44/go-uring v0.0.0-20220926161041-69611e8b13d5 // indirect

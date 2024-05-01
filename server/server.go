@@ -2,6 +2,7 @@ package flsvr
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -17,19 +18,26 @@ import (
 
 type SvrCfg struct {
 	Server struct {
-		Name       string `default:""`
-		Address    string `default:""`
-		ConsulAddr string `default:""`
+		Name        string `default:""`
+		Address     string `default:""`
+		ConsulAddr  string `default:""`
+		Environment string `default:"test"`
 	}
 }
 
-// v0.1.1
+type ServerInfo struct {
+	SvrAddr     string
+	ConsulAddr  string
+	BasePath    string
+	App         string
+	SvrName     string
+	Environment string
+}
+
+// v0.1.2
 type FLSvr struct {
-	s          *rpcx_svr.Server
-	svrAddr    string
-	consulAddr string
-	basePath   string
-	svrName    string
+	s       *rpcx_svr.Server
+	svrInfo *ServerInfo
 }
 
 func NewFLServer(cfg string) *FLSvr {
@@ -37,32 +45,37 @@ func NewFLServer(cfg string) *FLSvr {
 		panic("cfg empty")
 	}
 	flSvr := &FLSvr{}
-	svrAddr, consulAddr, basePath, svrName, err := loadSvrCfgInfo(cfg)
-	if err != nil {
+	var err error
+	flSvr.svrInfo, err = loadSvrCfgInfo(cfg)
+	if err != nil || flSvr.svrInfo == nil {
 		panic("load svrcfg failed")
 	}
-	flSvr.svrAddr = svrAddr
-	flSvr.consulAddr = consulAddr
-	flSvr.basePath = basePath
-	flSvr.svrName = svrName
 	flSvr.s = rpcx_svr.NewServer()
-	registerConuslPlugin(flSvr.s, svrAddr, consulAddr, basePath)
+	registerConuslPlugin(flSvr.s, flSvr.svrInfo.SvrAddr, flSvr.svrInfo.ConsulAddr, flSvr.svrInfo.BasePath)
 	return flSvr
 }
 
+func (f *FLSvr) getSvrName() string {
+	return f.svrInfo.SvrName
+}
+
+func (f *FLSvr) getSvrAddr() string {
+	return f.svrInfo.SvrAddr
+}
+
 func (f *FLSvr) RegisterHandler(svrHandle interface{}) error {
-	f.s.RegisterName(f.svrName, svrHandle, "")
+	f.s.RegisterName(f.getSvrName(), svrHandle, "")
 	fllog.Log().Debug("consulAddr:%s", consul.GetConsulAddr())
 
 	return nil
 }
 
 func (f *FLSvr) RegisterFunc(fn interface{}) {
-	f.s.RegisterFunction(f.svrName, fn, "")
+	f.s.RegisterFunction(f.getSvrName(), fn, "")
 }
 
 func (f *FLSvr) StartServer() error {
-	if err := f.s.Serve("tcp", f.svrAddr); err != nil {
+	if err := f.s.Serve("tcp", f.getSvrAddr()); err != nil {
 		fllog.Log().Error("serve failed. err:", err)
 		return err
 	}
@@ -70,37 +83,54 @@ func (f *FLSvr) StartServer() error {
 	return nil
 }
 
-func loadSvrCfgInfo(cfg string) (string, string, string, string, error) {
+func loadSvrCfgInfo(cfg string) (*ServerInfo, error) {
 	svrCfg := SvrCfg{}
 	if err := config.ParseConfigWithPath(&svrCfg, cfg); err != nil {
 		fllog.Log().Error("load svr logcfg failed.", err, cfg)
-		return "", "", "", "", err
+		return nil, err
 	}
-	fllog.Log().Debug("svrCfg:%+v", svrCfg)
-	if len(svrCfg.Server.Name) == 0 || len(svrCfg.Server.Address) == 0 {
-		return "", "", "", "", errors.New("svrcfg invalid")
+	fllog.Log().Debug(fmt.Sprintf("svrCfg:%+v", svrCfg))
+	svrCfg.Server.Environment = strings.ToLower(svrCfg.Server.Environment)
+	if len(svrCfg.Server.Name) == 0 || len(svrCfg.Server.Address) == 0 ||
+		(svrCfg.Server.Environment != "test" && svrCfg.Server.Environment != "proc") {
+		fllog.Log().Error(fmt.Sprintf("SvrAddr:[%s] or SvrName:[%s] or Environment:[%s] invalid",
+			svrCfg.Server.Address, svrCfg.Server.Name, svrCfg.Server.Environment))
+		return nil, errors.New("svrcfg invalid")
 	}
 
-	basePath, svrName := parseSvrName(svrCfg.Server.Name)
-	if len(basePath) == 0 || len(svrName) == 0 {
-		fllog.Log().Error("basePath or svrName empty", basePath, svrName)
-		return "", "", "", "", errors.New("parse server name failed")
+	strApp, svrName := parseAppSvrName(svrCfg.Server.Name)
+	if len(strApp) == 0 || len(svrName) == 0 {
+		fllog.Log().Error(fmt.Sprintf("app:[%s] or svrName:[%s] empty", strApp, svrName))
+		return nil, errors.New("parse server name failed")
 	}
 
 	if len(svrCfg.Server.ConsulAddr) == 0 {
 		localIP := getLocalIp()
 		if len(localIP) == 0 {
 			fllog.Log().Error("localIP empty")
-			return "", "", "", "", errors.New("consulAddr empty")
+			return nil, errors.New("consulAddr empty")
 		}
 		svrCfg.Server.ConsulAddr = localIP + ":8500"
 	}
-	fllog.Log().Debug(svrCfg.Server.Address, svrCfg.Server.ConsulAddr, basePath, svrName)
+
+	fllog.Log().Debug(fmt.Sprintf("SvrAddr:%s ConsulAddr:%s App:%s SvrName:%s Environment:%s",
+		svrCfg.Server.Address, svrCfg.Server.ConsulAddr, strApp, svrName, svrCfg.Server.Environment))
 	if len(svrCfg.Server.ConsulAddr) > 0 {
 		consul.SetConsulAddr(svrCfg.Server.ConsulAddr)
 	}
-	fllog.Log().Debug("svrCfg=", svrCfg)
-	return svrCfg.Server.Address, svrCfg.Server.ConsulAddr, basePath, svrName, nil
+	if len(svrCfg.Server.Environment) > 0 {
+		consul.SetConsulEnvironment(svrCfg.Server.Environment)
+	}
+	svrInfo := &ServerInfo{
+		SvrAddr:     svrCfg.Server.Address,
+		ConsulAddr:  svrCfg.Server.ConsulAddr,
+		BasePath:    fmt.Sprintf("/%s_%s", svrCfg.Server.Environment, strApp),
+		App:         strApp,
+		SvrName:     svrName,
+		Environment: svrCfg.Server.Environment,
+	}
+	fllog.Log().Debug(fmt.Sprintf("svrInfo:%+v", svrInfo))
+	return svrInfo, nil
 }
 
 func registerConuslPlugin(s *rpcx_svr.Server, svrAddr, conuslAddr, basePath string) {
@@ -120,8 +150,8 @@ func registerConuslPlugin(s *rpcx_svr.Server, svrAddr, conuslAddr, basePath stri
 	fllog.Log().Debug("register consul succ!")
 }
 
-func parseSvrName(name string) (string, string) {
-	vecSplit := strings.Split(name, ".")
+func parseAppSvrName(src string) (string, string) {
+	vecSplit := strings.Split(src, ".")
 	if len(vecSplit) != 2 {
 		return "", ""
 	}
@@ -158,22 +188,3 @@ func getLocalIp() string {
 	}
 	return ""
 }
-
-// v0.1.0
-// func Server(cfg string, svrHandle interface{}) error {
-// 	svrAddr, consulAddr, basePath, svrName, err := loadSvrCfgInfo(cfg)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	s := rpcx_svr.NewServer()
-// 	registerConuslPlugin(s, svrAddr, consulAddr, basePath)
-// 	s.RegisterName(svrName, svrHandle, "")
-// 	fllog.Log().Debug("consulAddr:%s", consul.GetConsulAddr())
-// 	if err := s.Serve("tcp", svrAddr); err != nil {
-// 		fllog.Log().Error("serve failed. err:", err)
-// 		return err
-// 	}
-
-// 	fllog.Log().Error("start server success!")
-// 	return nil
-// }
