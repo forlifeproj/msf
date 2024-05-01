@@ -3,7 +3,7 @@ module github.com/forlifeproj/msf/client
 go 1.20
 
 require (
-	github.com/forlifeproj/msf/consul v0.0.0-20240428131808-4bc83dc6447f
+	github.com/forlifeproj/msf/consul v0.0.0-20240501010313-0e6eb9343eae
 	github.com/rpcxio/rpcx-consul v0.0.0-20230904043151-f6175fbe2f72
 	github.com/smallnest/rpcx v1.8.30
 )
@@ -19,7 +19,7 @@ require (
 	github.com/edwingeng/doublejump v1.0.1 // indirect
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/fatih/color v1.14.1 // indirect
-	github.com/forlifeproj/msf/config v0.0.0-20240428130908-1c45b79d112c // indirect
+	github.com/forlifeproj/msf/config v0.0.0-20240501010313-0e6eb9343eae // indirect
 	github.com/go-ping/ping v1.1.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

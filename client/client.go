@@ -2,6 +2,7 @@ package flcli
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ func (f *FlClient) DoRequest(ctx context.Context, req interface{}, rsp interface
 func (f *FlClient) ParseSvrInfo(serviceName string) {
 	vecSplit := strings.Split(serviceName, ".")
 	if len(vecSplit) >= 0 {
-		f.SvrInfo.SvrBasePath = vecSplit[0]
+		f.SvrInfo.SvrBasePath = fmt.Sprintf("/%s_%s", consul.GetConsulEnvironment(), vecSplit[0])
 	}
 	if len(vecSplit) >= 1 {
 		f.SvrInfo.SvrName = vecSplit[1]
