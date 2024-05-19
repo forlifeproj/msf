@@ -39,8 +39,8 @@ func Init(cfg string) error {
 		fmt.Printf("logUtils init failed. err:%+v", err)
 		return err
 	}
-	fmt.Printf("log init succ. cfg:%s logCfg:%+v", cfg, logCfg)
-	Debug("log init succ. cfg:%s logCfg:%+v", cfg, logCfg)
+	// fmt.Printf("log init succ. cfg:%s logCfg:%+v", cfg, logCfg)
+	// Debug("log init succ. cfg:%s logCfg:%+v", cfg, logCfg)
 	return nil
 }
 

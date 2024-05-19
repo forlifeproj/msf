@@ -21,7 +21,7 @@ var ConsulInstance *ConsulUtils
 
 type SvrCfg struct {
 	Server struct {
-		ConsulAddr string `default:""`
+		ConsulAddr  string `default:""`
 		Environment string `default:"test"`
 	}
 }
@@ -48,7 +48,7 @@ func SetConsulAddr(addr string) {
 	utils := NewConsulUtils()
 	if utils != nil {
 		utils.ConsulCfg.ConsulAddr = addr
-		fmt.Printf("set  consulAddr=%s suuc \n", addr)
+		// fmt.Printf("set  consulAddr=%s suuc \n", addr)
 	}
 }
 
@@ -58,7 +58,7 @@ func GetConsulAddr() string {
 		fmt.Printf("get  consulAddr=%s suuc \n", utils.ConsulCfg.ConsulAddr)
 		return utils.ConsulCfg.ConsulAddr
 	}
-	fmt.Printf("utils:%+v", utils)
+	// fmt.Printf("utils:%+v", utils)
 	return ""
 }
 
@@ -66,14 +66,14 @@ func SetConsulEnvironment(envir string) {
 	utils := NewConsulUtils()
 	if utils != nil {
 		utils.ConsulCfg.Environment = envir
-		fmt.Printf("set  consulEnvir=%s suuc \n", envir)
+		// fmt.Printf("set  consulEnvir=%s suuc \n", envir)
 	}
 }
 
 func GetConsulEnvironment() string {
 	utils := NewConsulUtils()
 	if utils != nil {
-		fmt.Printf("get consulEnvir=%s suuc \n", utils.ConsulCfg.Environment)
+		// fmt.Printf("get consulEnvir=%s suuc \n", utils.ConsulCfg.Environment)
 		return utils.ConsulCfg.Environment
 	}
 	return ""

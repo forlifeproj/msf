@@ -10,6 +10,7 @@ import (
 	cclient "github.com/rpcxio/rpcx-consul/client"
 	rclient "github.com/smallnest/rpcx/client"
 	"github.com/smallnest/rpcx/protocol"
+	"github.com/smallnest/rpcx/share"
 )
 
 // CallDesc RPC参数
@@ -27,9 +28,10 @@ type ServiceInfo struct {
 }
 
 type FlClient struct {
-	RpcCli rclient.XClient
-
-	SvrInfo ServiceInfo
+	RpcCli      rclient.XClient
+	SvrInfo     ServiceInfo
+	ReqMetaData map[string]string
+	ResMetaData map[string]string
 }
 
 func NewClient(callDesc CallDesc) *FlClient {
@@ -38,6 +40,9 @@ func NewClient(callDesc CallDesc) *FlClient {
 
 	// parse svr_addr
 	flC := &FlClient{}
+	flC.ReqMetaData = make(map[string]string)
+	flC.ResMetaData = make(map[string]string)
+
 	flC.ParseSvrInfo(callDesc.ServiceName)
 	svrDiscovery, _ := cclient.NewConsulDiscovery(
 		flC.SvrInfo.SvrBasePath,
@@ -62,8 +67,32 @@ func (f *FlClient) Close() {
 	f.RpcCli.Close()
 }
 
-func (f *FlClient) DoRequest(ctx context.Context, req interface{}, rsp interface{}) error {
-	return f.RpcCli.Call(ctx, f.SvrInfo.InterfaceName, req, rsp)
+func (f *FlClient) AddReqMetaData(k, v string) {
+	if f.ReqMetaData != nil {
+		f.ReqMetaData[k] = v
+	}
+}
+
+func (f *FlClient) GetResMetaData(key string) string {
+	if f.ResMetaData != nil {
+		return f.ResMetaData[key]
+	}
+	return ""
+}
+
+func (f *FlClient) DoRequest(ctx context.Context, req interface{}, rsp interface{}) (err error) {
+
+	ctx = context.WithValue(ctx, share.ReqMetaDataKey, f.ReqMetaData)
+	ctx = context.WithValue(ctx, share.ResMetaDataKey, make(map[string]string))
+
+	err = f.RpcCli.Call(ctx, f.SvrInfo.InterfaceName, req, rsp)
+	resMeta := ctx.Value(share.ResMetaDataKey).(map[string]string)
+	for k, v := range resMeta {
+		if f.ResMetaData != nil {
+			f.ResMetaData[k] = v
+		}
+	}
+	return err
 }
 
 func (f *FlClient) ParseSvrInfo(serviceName string) {

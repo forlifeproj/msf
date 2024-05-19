@@ -7,6 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
+	"github.com/smallnest/rpcx/protocol"
+	"github.com/smallnest/rpcx/share"
+
 	metrics "github.com/rcrowley/go-metrics"
 	cserver "github.com/rpcxio/rpcx-consul/serverplugin"
 	rpcx_svr "github.com/smallnest/rpcx/server"
@@ -14,6 +19,10 @@ import (
 	"github.com/forlifeproj/msf/config"
 	consul "github.com/forlifeproj/msf/consul"
 	fllog "github.com/forlifeproj/msf/log"
+)
+
+const (
+	HTTP_STATUS_CODE = "http_status_code"
 )
 
 type SvrCfg struct {
@@ -40,6 +49,29 @@ type FLSvr struct {
 	svrInfo *ServerInfo
 }
 
+type TestPlugin struct{}
+
+func (p *TestPlugin) PostReadRequest(ctx context.Context, r *protocol.Message, e error) error {
+	fllog.Log().Debug(fmt.Sprintf("ctx:%+v r:%+v", ctx, r))
+	ctx = context.WithValue(ctx, "key_test_1", "111111")
+	if r.Metadata == nil {
+		r.Metadata = make(map[string]string)
+	}
+	r.Metadata["key_test_2"] = "222222"
+
+	fllog.Log().Debug(fmt.Sprintf("ctx:%+v r:%+v", ctx, r))
+	return nil
+}
+
+type AuthInfo struct {
+	Uid int64
+}
+
+type MyContext struct {
+	context.Context
+	Auth AuthInfo
+}
+
 func NewFLServer(cfg string) *FLSvr {
 	if len(cfg) == 0 {
 		panic("cfg empty")
@@ -52,6 +84,8 @@ func NewFLServer(cfg string) *FLSvr {
 	}
 	flSvr.s = rpcx_svr.NewServer()
 	registerConuslPlugin(flSvr.s, flSvr.svrInfo.SvrAddr, flSvr.svrInfo.ConsulAddr, flSvr.svrInfo.BasePath)
+	// testPlugin := TestPlugin{}
+	// flSvr.s.Plugins.Add(&testPlugin)
 	return flSvr
 }
 
@@ -187,4 +221,14 @@ func getLocalIp() string {
 		// }
 	}
 	return ""
+}
+
+func GetReqMetaDataMap(ctx context.Context) map[string]string {
+	reqMeta := ctx.Value(share.ReqMetaDataKey).(map[string]string)
+	return reqMeta
+}
+
+func GetResMetaDataMap(ctx context.Context) map[string]string {
+	reqMeta := ctx.Value(share.ResMetaDataKey).(map[string]string)
+	return reqMeta
 }
